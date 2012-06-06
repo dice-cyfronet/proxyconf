@@ -1,0 +1,113 @@
+= proxyconf
+
+ProxyConf is nginx tool for dynamic proxy/load-balancer configuration via RESTful interface.
+
+Process should run as same user as nginx (it needs to be able to send SIGHUP to nginx in order to reload config).
+
+== Building gem
+
+Install dependencies using `bundle install` then `parka bundle` to build gem.
+
+== REST interface
+
+=== Listing registered workers: <tt>GET /workers</tt>
+Returns list of registered workers. Response is in JSON format and it contains hash of hashes of arrays. Outer hash maps application_id, inner one - service name.
+
+Example response:
+  {"app_name":{"service_name":["10.0.0.2:9200"]}}
+
+=== Getting worker statistics <tt>GET /statistics/:max_time</tt> ===
+Gets workers usage statistics for last <tt>max_time</tt> period of time. <tt>max_time</tt> cannot be greater than <tt>access_log_buffer</tt> configuration value.
+
+Example response:
+  {"app_name":{
+    "service_name":{
+      "10.0.1.1:9002":{
+        "request_count":834,
+        "response_time":{"max":0.132,"min":0.01,"avg":0.013278177458033441,"median":0.012,"stddev":0.008232055757955093},
+        "request_length":{"max":247,"min":247,"avg":247.0,"median":247,"stddev":0.0},
+        "response_length":{"max":3090,"min":3090,"avg":3090.0,"median":3090,"stddev":0.0}
+      },
+      "10.0.1.8:9200":{
+        "request_count":0,
+        "response_time":{"max":null,"min":null,"avg":null,"median":null,"stddev":null},
+        "request_length":{"max":null,"min":null,"avg":null,"median":null,"stddev":null},
+        "response_length":{"max":null,"min":null,"avg":null,"median":null,"stddev":null}
+        }
+      }
+    }
+  }
+
+=== Registering workers: <tt>POST /workers/add/:application_id/:service_name</tt>
+Registers worker and reloads nginx config. Workers list to be registered should be passed as <tt>workers</tt> parameter. See example client for more details.
+
+=== Unregistering workers: <tt>POST /workers/delete/:application_id/:service_name</tt>
+Unregisters workers and reloads nginx config. Workers list to be unregistered should be passed as <tt>workers</tt> parameter.
+
+== Usage
+  Usage: proxyconf [options]
+      -c, --config FILE                YAML-based configuration file example
+      -v, --[no-]verbose               Verbose logging (for debugging)
+      -d, --[no-]dev                   Development environment
+        
+== Configuration
+
+Configuration resides in YAML-based configuration file. We use two files to feed nginx configuration. We also need to have nginx pidfile.
+
+Example configuration (see <tt>example/example_config.yaml</tt>.):
+  bind:               0.0.0.0                              # which interface to bind
+  port:               1234                                 # which port to listen on
+  upstream_config:    /etc/nginx/proxyconf_upstream.conf   # included in http config section
+  proxy_config:       /etc/nginx/proxyconf_proxy.conf      # included in server config section  
+  pid_file:           /var/run/nginx.pid                   # nginx pidfile
+  access_log:         /var/log/nginx/proxyconf.log         # access log used in stats generator
+  access_log_buffer:  1200                                 # how old entries are kept in memory for statistics (in seconds)
+  proxy_timeout:      600                                  # proxy timeout in seconds (probably should be higher than 600 seconds)
+
+To make it do the job you need to include generated files in your <tt>/etc/nginx/nginx.conf</tt>.
+
+It should look like this:
+
+  ...
+  http {
+          log_format  proxyconf   '$upstream_addr   $upstream_response_time $time_local     $status $request_length	$body_bytes_sent'; # note that fields are \t separated
+          access_log /var/log/nginx/proxyconf.log proxyconf;       # log file for proxyconf statistics module
+          access_log /var/log/nginx/access.log combined;           # standard logfile (we want proxyconf logfile additionally to standard one)
+          ...
+
+          include /etc/nginx/proxyconf_upstream.conf;
+          
+          server {
+                  listen       80;
+                  server_name  localhost;
+                  
+                  ...
+                  
+                  include /etc/nginx/proxyconf_proxy.conf;
+          }  
+  }    
+                    
+== Example client   
+See <tt>example/example_client.rb</tt>.
+
+  #!/usr/bin/env ruby
+  require 'rest-client'
+  require 'json'
+  require 'pp'  
+ 
+  proxyconf = RestClient::Resource.new('http://localhost:1234/')
+
+  puts "Register two clients..."
+  proxyconf["workers/add/app_name/service_name"].post workers: %w{10.0.0.1:9002 10.0.0.2:9200}
+
+  puts "Display client list..."
+  puts proxyconf["workers"].get
+
+  puts "Get statistics..."
+  pp JSON.parse(proxyconf['statistics/60'].get)
+  
+  puts "Unregister one client..."
+  proxyconf["workers/delete/app_name/service_name"].post workers: %w{10.0.0.1:9002}
+
+  puts "Display client list again..."
+  puts proxyconf["workers"].get       

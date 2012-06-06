@@ -1,0 +1,13 @@
+source :rubygems
+
+gem "sinatra"             
+gem "sinatra-sugar"
+gem "json"
+gem "thin"
+gem "file-tail"
+gem "net-dns"
+gem "rest-client"
+
+group :development do
+  gem "parka"
+end

@@ -1,0 +1,8 @@
+bind:               0.0.0.0                              # which interface to bind
+port:               1234                                 # which port to listen on
+upstream_config:    /etc/nginx/proxyconf_upstream.conf   # included in http config section
+proxy_config:       /etc/nginx/proxyconf_proxy.conf      # included in server config section  
+pid_file:           /var/run/nginx.pid                   # nginx pidfile
+access_log:         /var/log/nginx/proxyconf.log         # access log used in stats generator
+access_log_buffer:  1200                                 # how old entries are kept in memory for statistics (in seconds)
+proxy_timeout:      600                                  # proxy timeout in seconds (probably should be higher than 600 seconds)

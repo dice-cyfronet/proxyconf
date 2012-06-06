@@ -1,0 +1,59 @@
+#!/usr/bin/env ruby
+require_relative '../lib/proxyconf/nginx_configuration'
+require_relative '../lib/proxyconf/rest_interface'
+require_relative '../lib/proxyconf/log_reader'
+require 'optparse'
+require 'yaml'             
+
+include ProxyConf
+              
+options = OpenStruct.new
+options.config = "/etc/proxyconf.yaml"
+options.verbose = false   
+options.development = true
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: proxyconf [options]"
+  
+  opts.on_tail("-v", "--[no-]verbose", "Verbose logging (for debugging)") do |v|
+    options.verbose = v
+  end  
+  
+  opts.on_tail("-d", "--[no-]dev", "Development environment for sinatraa") do |v|
+    options.development = v    
+  end                          
+
+  opts.on("-c FILE", "--config FILE", "YAML-based configuration file") do |path|  
+    options.config = path
+  end
+end.parse!
+
+begin                                
+  configuration = YAML::load_file options.config
+  proxyconf = NginxConfiguration.new(configuration)
+rescue Exception => e
+  $stderr << "Couldn't load configuration: #{e}\n"
+  exit
+end                                    
+
+begin
+  proxyconf.configure # starting - clean configs file
+  log_reader = LogReader.new(configuration["access_log"], configuration["access_log_buffer"], proxyconf.dns_map)
+rescue Errno::EACCES
+  $stderr << "Exiting after error...\n"
+  exit
+end
+
+# Create thread for log gathering
+
+# Configure Sinatra
+RESTInterface.set :proxyconf, proxyconf
+RESTInterface.set :log_reader, log_reader
+RESTInterface.set :port, configuration["port"] if configuration["port"]
+RESTInterface.set :bind, configuration["bind"] if configuration["bind"]
+RESTInterface.set :logging, options.verbose
+RESTInterface.set :environment, options.development ? "development" : "production"
+RESTInterface.set :dump_errors, options.development
+RESTInterface.set :show_exceptions, options.development
+
+RESTInterface.run!
