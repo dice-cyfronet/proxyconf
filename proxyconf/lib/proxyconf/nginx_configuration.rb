@@ -13,7 +13,7 @@ module ProxyConf
     # @param [Hash] config Data from configuration file
     def initialize(config)
       @config = config
-      @applications = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = [] } }
+      @contexts = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = [] } } } 
       @dns_map = {}
       @dns_map.extend(MonitorMixin)
     end
@@ -21,12 +21,13 @@ module ProxyConf
     # Registers worker
     #
     # If DNS name is given, all IP addresses are registered. If worker is already registered does nothing.
+    # @param [String] context_id Context id
     # @param [String] application_id Application id
     # @param [String] service_name Service name
     # @param [String] addr Service address
     
-    def register(application_id, service_name, addr)      
-      unless @applications[application_id][service_name].include? addr
+    def register(context_id, application_id, service_name, addr)      
+      unless @contexts[context_id][application_id][service_name].include? addr
         unless addr =~ /^\d+\.\d+\.\d+\d+(:\d+)?$/
           addr_parts = /^([^:]*)(:\d+)?/.match addr
           port = if addr_parts[2] then addr_parts[2] else ":80" end
@@ -36,7 +37,7 @@ module ProxyConf
             end
           end
         end
-        @applications[application_id][service_name] << addr 
+        @contexts[context_id][application_id][service_name] << addr 
 
       end
     end
@@ -44,19 +45,21 @@ module ProxyConf
     # Unregisters worker
     #
     # If worker is not registered does nothing.
+    # @param [String] context_id Context id
     # @param [String] application_id Application id
     # @param [String] service_name Service name
     # @param [String] addr Service address
 
-    def unregister(application_id, service_name, addr)              
-      if @applications.has_key? application_id and @applications[application_id].has_key? service_name then
-        ret = @applications[application_id][service_name].delete addr 
+    def unregister(context_id, application_id, service_name, addr)              
+      if @contexts.has_key? context_id and @contexts[context_id].has_key? application_id and @contexts[context_id][application_id].has_key? service_name then
+        ret = @contexts[context_id][application_id][service_name].delete addr 
         @dns_map.synchronize do 
            @dns_map.delete_if { |k,v| v == addr }
         end                                           
         # data structures cleanup
-        @applications[application_id].delete service_name if @applications[application_id][service_name].size == 0
-        @applications.delete application_id if @applications[application_id].size == 0
+	@contexts[context_id][application_id].delete service_name if @contexts[context_id][application_id][service_name].size == 0
+        @contexts[context_id].delete application_id if @contexts[context_id][application_id].size == 0
+        @contexts.delete context_id if @contexts[context_id].size == 0
       end
       ret
     end
@@ -64,7 +67,7 @@ module ProxyConf
     # Returns hash of applications and their workers
     # @return [Hash]
     def list
-      @applications
+      @contexts
     end
 
   private
@@ -84,22 +87,24 @@ module ProxyConf
       proxy << config_header
 
 
-      @applications.each do |application, services|
-        services.each do |service, workers|
-          application_service_name = "app.#{application}.service.#{service}"
+      @contexts.each do |context, applications|
+	applications.each do |application, services|
+          services.each do |service, workers|
+            application_service_name = "ctx.#{context}.app.#{application}.service.#{service}"
       
-          # TODO sanitize vm.name
-          # TODO Ticket #10
-          upstream << "upstream #{application_service_name} { \n"
-          upstream << workers.map { |worker| "\tserver #{worker};"}.join("\n")
-          upstream << "\n}\n"
+            # TODO sanitize vm.name
+            # TODO Ticket #10
+            upstream << "upstream #{application_service_name} { \n"
+            upstream << workers.map { |worker| "\tserver #{worker};"}.join("\n")
+            upstream << "\n}\n"
       
-          proxy    << <<-CONFIG
-  location /#{application}/#{service}/ {
+            proxy    << <<-CONFIG
+  location /#{context}/#{application}/#{service}/ {
     proxy_read_timeout #{@config["proxy_timeout"]};
     proxy_pass http://#{application_service_name}/;
   }   
   CONFIG
+	  end
         end
       end
       [upstream.string, proxy.string]   

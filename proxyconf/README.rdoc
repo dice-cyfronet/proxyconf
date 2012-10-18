@@ -11,10 +11,10 @@ Install dependencies using `bundle install` then `parka bundle` to build gem.
 == REST interface
 
 === Listing registered workers: <tt>GET /workers</tt>
-Returns list of registered workers. Response is in JSON format and it contains hash of hashes of arrays. Outer hash maps application_id, inner one - service name.
+Returns list of registered workers. Response is in JSON format and it contains hash of hashes of hashes of arrays. Outer hash maps context_id than application_id, inner one - service name.
 
 Example response:
-  {"app_name":{"service_name":["10.0.0.2:9200"]}}
+  {"context_name": {"app_name":{"service_name":["10.0.0.2:9200"]}}}
 
 === Getting worker statistics <tt>GET /statistics/:max_time</tt> ===
 Gets workers usage statistics for last <tt>max_time</tt> period of time. <tt>max_time</tt> cannot be greater than <tt>access_log_buffer</tt> configuration value.
@@ -38,10 +38,10 @@ Example response:
     }
   }
 
-=== Registering workers: <tt>POST /workers/add/:application_id/:service_name</tt>
+=== Registering workers: <tt>POST /workers/add/:context_id/:application_id/:service_name</tt>
 Registers worker and reloads nginx config. Workers list to be registered should be passed as <tt>workers</tt> parameter. See example client for more details.
 
-=== Unregistering workers: <tt>POST /workers/delete/:application_id/:service_name</tt>
+=== Unregistering workers: <tt>POST /workers/delete/:context_id/:application_id/:service_name</tt>
 Unregisters workers and reloads nginx config. Workers list to be unregistered should be passed as <tt>workers</tt> parameter.
 
 == Usage

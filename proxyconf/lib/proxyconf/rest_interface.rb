@@ -10,9 +10,9 @@ module ProxyConf
     end
     
     # Registers given workers
-    post '/workers/add/:application_id/:service_name' do      
+    post '/workers/add/:context_id/:application_id/:service_name' do      
       params[:workers].each do |worker|
-        settings.proxyconf.register(params[:application_id], params[:service_name], worker)
+        settings.proxyconf.register(params[:context_id], params[:application_id], params[:service_name], worker)
       end
       settings.proxyconf.configure
       
@@ -20,10 +20,10 @@ module ProxyConf
     end
     
     # Unregisters given workers
-    post '/workers/delete/:application_id/:service_name' do            
+    post '/workers/delete/:context_id/:application_id/:service_name' do            
       success = false
       params[:workers].each do |worker|
-        success |= settings.proxyconf.unregister(params[:application_id], params[:service_name], worker)
+        success |= settings.proxyconf.unregister(params[:context_id], params[:application_id], params[:service_name], worker)
       end
       settings.proxyconf.configure if success
       
