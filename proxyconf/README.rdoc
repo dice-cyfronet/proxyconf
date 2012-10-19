@@ -16,7 +16,7 @@ Returns list of registered workers. Response is in JSON format and it contains h
 Example response:
   {"context_name": {"app_name":{"service_name":["10.0.0.2:9200"]}}}
 
-=== Getting worker statistics <tt>GET /statistics/:max_time</tt> ===
+=== Getting worker statistics <tt>GET /statistics/:max_time</tt>
 Gets workers usage statistics for last <tt>max_time</tt> period of time. <tt>max_time</tt> cannot be greater than <tt>access_log_buffer</tt> configuration value.
 
 Example response:
@@ -49,7 +49,10 @@ Unregisters workers and reloads nginx config. Workers list to be unregistered sh
       -c, --config FILE                YAML-based configuration file example
       -v, --[no-]verbose               Verbose logging (for debugging)
       -d, --[no-]dev                   Development environment
-        
+
+== Security
+All rest services are sucred by basic HTTP authentication. Username and password can be set in configuration file.
+      
 == Configuration
 
 Configuration resides in YAML-based configuration file. We use two files to feed nginx configuration. We also need to have nginx pidfile.
@@ -57,6 +60,8 @@ Configuration resides in YAML-based configuration file. We use two files to feed
 Example configuration (see <tt>example/example_config.yaml</tt>.):
   bind:               0.0.0.0                              # which interface to bind
   port:               1234                                 # which port to listen on
+  username:           username                             # rest service basic auth username
+  password:           password                             # rest service basic auth password
   upstream_config:    /etc/nginx/proxyconf_upstream.conf   # included in http config section
   proxy_config:       /etc/nginx/proxyconf_proxy.conf      # included in server config section  
   pid_file:           /var/run/nginx.pid                   # nginx pidfile
@@ -95,7 +100,7 @@ See <tt>example/example_client.rb</tt>.
   require 'json'
   require 'pp'  
  
-  proxyconf = RestClient::Resource.new('http://localhost:1234/')
+  proxyconf = RestClient::Resource.new('http://username:password@localhost:1234/')
 
   puts "Register two clients..."
   proxyconf["workers/add/app_name/service_name"].post workers: %w{10.0.0.1:9002 10.0.0.2:9200}

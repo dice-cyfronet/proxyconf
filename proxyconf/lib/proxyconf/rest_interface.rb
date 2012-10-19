@@ -2,7 +2,12 @@ require "sinatra/base"
 require "sinatra/sugar"               
 require 'json'    
 module ProxyConf     
-  class RESTInterface < Sinatra::Base
+  class RESTInterface < Sinatra::Base      
+    
+    use Rack::Auth::Basic, "Restricted Area" do |usr, pass|            
+      [usr, pass] == [username, password]
+    end
+    
     # return JSON list of registered workers (as Hash(Key = application_id) of Hash(Key = service_name) of Array (of worker host:port))
     get '/workers' do
       content_type :json

@@ -4,7 +4,7 @@ require 'json'
 require 'pp'
               
        
-proxyconf = RestClient::Resource.new('http://127.0.0.1:1234/')
+proxyconf = RestClient::Resource.new('http://username:password@127.0.0.1:1234/')
 
 puts "Register two clients..."
 proxyconf["workers/add/context_name/app_name/service_name"].post workers: %w{10.42.1.1:9002 10.42.1.8:9200}

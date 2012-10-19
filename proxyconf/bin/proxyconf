@@ -56,4 +56,8 @@ RESTInterface.set :environment, options.development ? "development" : "productio
 RESTInterface.set :dump_errors, options.development
 RESTInterface.set :show_exceptions, options.development
 
+# Configure security
+RESTInterface.set :username, configuration['username'] if configuration['username']
+RESTInterface.set :password, configuration['password'] if configuration['password']
+
 RESTInterface.run!
