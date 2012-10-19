@@ -51,7 +51,7 @@ Unregisters workers and reloads nginx config. Workers list to be unregistered sh
       -d, --[no-]dev                   Development environment
 
 == Security
-All rest services are sucred by basic HTTP authentication. Username and password can be set in configuration file.
+All rest services are sucured by basic HTTP authentication. Username and password can be set in configuration file.
       
 == Configuration
 
