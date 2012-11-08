@@ -31,7 +31,7 @@ module ProxyConf
         success |= settings.proxyconf.unregister(params[:context_id], params[:application_id], params[:service_name], worker)
       end
       settings.proxyconf.configure if success
-      
+    
       "OK"
     end         
 
