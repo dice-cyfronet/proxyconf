@@ -73,6 +73,7 @@ module ProxyConf
     # @param [String] addr Service address
     def unregister_from_all(addr)
 	matches = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Set.new } }
+	ret = false
 	@contexts.each_pair do |context_id, applications|
 	    applications.each_pair do |application_id, services|
 		services.each_pair do |service_id, addresses| 
@@ -85,10 +86,11 @@ module ProxyConf
 	matches.each_pair do |context_id, applications|
 	    applications.each_pair do |application_id, services|
 		services.each do |service_id| 
-		    unregister(context_id, application_id, service_id, addr)
+		   ret |= unregister(context_id, application_id, service_id, addr)
 		end
 	    end
 	end
+	ret
     end
 
     # Returns hash of applications and their workers

@@ -39,8 +39,9 @@ module ProxyConf
 	    conf.register(@context, @app, @service, @address)
 	    assert(conf.is_registered(@context, @app, @service, @address))
 	    #when 
-	    conf.unregister(@context, @app, @service, @address)
+	    ret1 = conf.unregister(@context, @app, @service, @address)
 	    #then	    
+	    assert(ret1)
 	    assert(!conf.is_registered(@context, @app, @service, @address))
 	end
 	
@@ -54,8 +55,9 @@ module ProxyConf
 	    assert(conf.is_registered(@context, @app, @service, @address2))
 	    assert(conf.is_registered(@context, @app, @service2, @address))
 	    #when 
-	    conf.unregister(@context, @app, @service, @address)
+	    ret1 = conf.unregister(@context, @app, @service, @address)
 	    #then
+	    assert(ret1)
 	    assert(!conf.is_registered(@context, @app, @service, @address))
 	    assert(conf.is_registered(@context, @app, @service, @address2))
 	    assert(conf.is_registered(@context, @app, @service2, @address))
@@ -65,8 +67,9 @@ module ProxyConf
 	    #given 
 	    conf = NginxConfiguration.new(nil)
 	    #when 
-	    conf.unregister(@context, @app, @service, @address)
+	    ret1 =conf.unregister(@context, @app, @service, @address)
 	    #then	    
+	    assert(!ret1)
 	    assert(!conf.is_registered(@context, @app, @service, @address))
 	end
 	
@@ -80,8 +83,9 @@ module ProxyConf
 	    assert(conf.is_registered(@context, @app, @service2, @address))
 	    assert(conf.is_registered(@context, @app, @service, @address2))
 	    #when 
-	    conf.unregister_from_all(@address)
+	    ret1 = conf.unregister_from_all(@address)
 	    #then 
+	    assert(ret1)
 	    assert(!conf.is_registered(@context, @app, @service, @address))
 	    assert(!conf.is_registered(@context, @app, @service2, @address))
 	    assert(conf.is_registered(@context, @app, @service, @address2))
@@ -97,9 +101,11 @@ module ProxyConf
 	    assert(conf.is_registered(@context, @app, @service2, @address))
 	    assert(conf.is_registered(@context, @app, @service, @address2))
 	    #when 
-	    conf.unregister_from_all(@address)
-	    conf.unregister_from_all(@address2)
+	    ret1 = conf.unregister_from_all(@address)
+	    ret2 = conf.unregister_from_all(@address2)
 	    #then 
+	    assert(ret1)
+	    assert(ret2)
 	    assert(!conf.is_registered(@context, @app, @service, @address))
 	    assert(!conf.is_registered(@context, @app, @service2, @address))
 	    assert(!conf.is_registered(@context, @app, @service, @address2))
@@ -109,8 +115,9 @@ module ProxyConf
 	    #given
 	    conf = NginxConfiguration.new(nil)
 	    #when 
-	    conf.unregister_from_all(@address)
+	    ret1 = conf.unregister_from_all(@address)
 	    #then 
+	    assert(!ret1)
 	    assert(!conf.is_registered(@context, @app, @service, @address))
 	end
 

@@ -33,7 +33,18 @@ module ProxyConf
       settings.proxyconf.configure if success
     
       "OK"
-    end         
+    end     
+    
+     # Unregisters given workers from all services
+    post '/workers/delete_all' do            
+      success = false
+      params[:workers].each do |worker|
+        success |= settings.proxyconf.unregister_from_all(worker)
+      end
+      settings.proxyconf.configure if success
+    
+      "OK"
+    end     
 
     # Returns statistics for all workers
     get '/statistics/:duration' do  
