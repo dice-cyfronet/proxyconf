@@ -1,5 +1,6 @@
 require_relative '../../lib/proxyconf/nginx_configuration'
 require "test/unit"
+require 'json'    
 
 module ProxyConf
     class TestNginxConfiguration < Test::Unit::TestCase
@@ -119,6 +120,23 @@ module ProxyConf
 	    #then 
 	    assert(!ret1)
 	    assert(!conf.is_registered(@context, @app, @service, @address))
+	end
+	
+	def test_list_all
+	    #given
+	    conf = NginxConfiguration.new(nil)
+	    conf.register(@context, @app, @service, @address)
+	    conf.register(@context, @app, @service2, @address)
+	    conf.register(@context, @app, @service, @address2)
+	    assert(conf.is_registered(@context, @app, @service, @address))
+	    assert(conf.is_registered(@context, @app, @service2, @address))
+	    assert(conf.is_registered(@context, @app, @service, @address2))
+	    #when 
+	    ret1 = conf.list_workers()
+	    #then 
+	    assert_equal(2, ret1.length)
+	    assert(ret1.include?(@address))
+	    assert(ret1.include?(@address2))
 	end
 
     end

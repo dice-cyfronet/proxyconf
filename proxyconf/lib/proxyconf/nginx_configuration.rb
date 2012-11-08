@@ -1,3 +1,4 @@
+require_relative './config_generation'
 require 'monitor'
 require 'net/dns'
 require 'set'
@@ -99,6 +100,22 @@ module ProxyConf
       @contexts
     end
 
+    # Returns a set of all registered workers
+    # @return [Set]
+    def list_workers
+       set = Set.new
+       @contexts.each_pair do |context_id, applications|
+	    applications.each_pair do |application_id, services|
+		services.each_pair do |service_id, addresses| 
+		    addresses.each do |address|
+			set << address
+		    end
+		end
+	    end
+	end
+	set.to_a()
+    end
+    
   private
 
     # Generate nginx proxy config
