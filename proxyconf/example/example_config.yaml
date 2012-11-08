@@ -8,3 +8,4 @@ pid_file:           /var/run/nginx.pid                   # nginx pidfile
 access_log:         /var/log/nginx/proxyconf.log         # access log used in stats generator
 access_log_buffer:  1200                                 # how old entries are kept in memory for statistics (in seconds)
 proxy_timeout:      600                                  # proxy timeout in seconds (probably should be higher than 600 seconds)
+proxy_send_timeout: 600
