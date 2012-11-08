@@ -1,4 +1,4 @@
-require_relative './config_generation'
+require_relative '../../lib/proxyconf/config_generation'
 require "test/unit"
 
 module ProxyConf

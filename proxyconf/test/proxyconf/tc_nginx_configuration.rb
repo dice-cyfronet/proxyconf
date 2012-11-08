@@ -1,4 +1,4 @@
-require_relative './nginx_configuration'
+require_relative '../../lib/proxyconf/nginx_configuration'
 require "test/unit"
 
 module ProxyConf
