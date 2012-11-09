@@ -15,9 +15,15 @@ module ProxyConf
     end
     
     # return JSON list of registered workers (as Array (of worker host:port))
-    get '/workers_list' do
+    get '/worker_list' do
       content_type :json
       settings.proxyconf.list_workers.to_json
+    end
+    
+    # return JSON list of registered ips (as Array (of ip))
+    get '/ip_list' do
+      content_type :json
+      settings.proxyconf.list_ips.to_json
     end
     
     # Registers given workers
@@ -26,7 +32,6 @@ module ProxyConf
         settings.proxyconf.register(params[:context_id], params[:application_id], params[:service_name], worker)
       end
       settings.proxyconf.configure
-      
       "OK"
     end
     
@@ -37,18 +42,22 @@ module ProxyConf
         success |= settings.proxyconf.unregister(params[:context_id], params[:application_id], params[:service_name], worker)
       end
       settings.proxyconf.configure if success
-    
       "OK"
     end     
     
      # Unregisters given workers from all services
-    post '/workers/delete_from_all' do            
+    post '/workers/delete_all' do            
       success = false
-      params[:workers].each do |worker|
-        success |= settings.proxyconf.unregister_from_all(worker)
-      end
+      if params[:workers]
+	params[:workers].each do |worker|
+	    success |= settings.proxyconf.unregister_from_all(worker)
+	end
+      elsif params[:ips]
+	params[:ips].each do |ip|
+	    success |= settings.proxyconf.unregister_ip_from_all(ip)
+	end
+      end 
       settings.proxyconf.configure if success
-    
       "OK"
     end     
 

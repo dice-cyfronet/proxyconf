@@ -10,8 +10,8 @@ module ProxyConf
 	    @app = "app123"
 	    @service = "service111"
 	    @service2 = "service222"
-	    @address = "www.google.pl"
-	    @address2 = "www.google2.pl"
+	    @address = "10.0.0.1"
+	    @address2 = "10.0.0.2"
 	end
 	
 	def test_register
@@ -122,6 +122,24 @@ module ProxyConf
 	    assert(!conf.is_registered(@context, @app, @service, @address))
 	end
 	
+	def test_unregister_ip_from_all
+	    #given
+	    conf = NginxConfiguration.new(nil)
+	    conf.register(@context, @app, @service, "http://#{@address}:8080")
+	    conf.register(@context, @app, @service2, @address)
+	    conf.register(@context, @app, @service, "http://#{@address2}:4000")
+	    assert(conf.is_registered(@context, @app, @service, "http://#{@address}:8080"))
+	    assert(conf.is_registered(@context, @app, @service2, @address))
+	    assert(conf.is_registered(@context, @app, @service, "http://#{@address2}:4000"))
+	    #when 
+	    ret1 = conf.unregister_ip_from_all(@address)
+	    #then 
+	    assert(ret1)
+	    assert(!conf.is_registered(@context, @app, @service, "http://#{@address}:8080"))
+	    assert(!conf.is_registered(@context, @app, @service2, @address))
+	    assert(conf.is_registered(@context, @app, @service, "http://#{@address2}:4000"))
+	end
+	
 	def test_list_all
 	    #given
 	    conf = NginxConfiguration.new(nil)
@@ -133,6 +151,23 @@ module ProxyConf
 	    assert(conf.is_registered(@context, @app, @service, @address2))
 	    #when 
 	    ret1 = conf.list_workers()
+	    #then 
+	    assert_equal(2, ret1.length)
+	    assert(ret1.include?(@address))
+	    assert(ret1.include?(@address2))
+	end
+	
+	def test_list_ips
+	    #given
+	    conf = NginxConfiguration.new(nil)
+	    conf.register(@context, @app, @service, "http://#{@address}:8080")
+	    conf.register(@context, @app, @service2, @address)
+	    conf.register(@context, @app, @service, "http://#{@address2}:4000")
+	    assert(conf.is_registered(@context, @app, @service, "http://#{@address}:8080"))
+	    assert(conf.is_registered(@context, @app, @service2, @address))
+	    assert(conf.is_registered(@context, @app, @service, "http://#{@address2}:4000"))
+	    #when 
+	    ret1 = conf.list_ips()
 	    #then 
 	    assert_equal(2, ret1.length)
 	    assert(ret1.include?(@address))
