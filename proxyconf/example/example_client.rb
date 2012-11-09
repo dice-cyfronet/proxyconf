@@ -31,3 +31,4 @@ proxyconf["workers/delete_all"].post ips: %w{10.0.0.7}
 
 puts "Display client hierarchy again..."
 puts proxyconf["workers"].get       
+
