@@ -7,6 +7,8 @@ require 'net/dns/resolver'
 module ProxyConf
   class NginxConfiguration
     
+  @@address_regex = /(.*:\/\/)?([^:\/]*)([:\/].*)?/
+      
   attr_reader :dns_map
   
   public  
@@ -54,8 +56,7 @@ module ProxyConf
     # @param [String] application_id Application id
     # @param [String] service_name Service name
     # @param [String] addr Service address
-
-    def unregister(context_id, application_id, service_name, addr)            
+    def unregister(context_id, application_id, service_name, addr)           
       if @contexts.has_key? context_id and @contexts[context_id].has_key? application_id and @contexts[context_id][application_id].has_key? service_name then
         ret = @contexts[context_id][application_id][service_name].delete addr 
         @dns_map.synchronize do 
@@ -93,6 +94,29 @@ module ProxyConf
 	end
 	ret
     end
+    
+    # Unregisters ip from all services
+    #
+    # @param [String] addr Service address
+    def unregister_ip_from_all(ip)
+	matches = []
+	ret = false
+	@contexts.each_pair do |context_id, applications|
+	    applications.each_pair do |application_id, services|
+		services.each_pair do |service_id, addresses| 
+		    addresses.each do |address|
+			if @@address_regex.match(address).captures[1] == ip 
+			    matches << [context_id, application_id, service_id, address]
+			end 
+		    end 
+		end
+	    end
+	end
+	matches.each do |match|
+	    ret |= unregister(match[0], match[1], match[2], match[3])
+	end
+	ret
+    end
 
     # Returns hash of applications and their workers
     # @return [Hash]
@@ -100,6 +124,22 @@ module ProxyConf
       @contexts
     end
 
+    # Returns a set of all registered ips
+    # @return [Set]
+    def list_ips
+       set = Set.new
+       @contexts.each_pair do |context_id, applications|
+	    applications.each_pair do |application_id, services|
+		services.each_pair do |service_id, addresses| 
+		    addresses.each do |address|
+			set << @@address_regex.match(address).captures[1]
+		    end
+		end
+	    end
+	end
+	set.to_a()
+    end
+    
     # Returns a set of all registered workers
     # @return [Set]
     def list_workers
@@ -121,7 +161,7 @@ module ProxyConf
     # Generate nginx proxy config
     # @return Two element array: upstream configuration and proxy configuration.
     def configuration
-      ConfigGeneration.new(@contexts, @config["proxy_timeout"], @config["proxy_send_timeout"]).generate
+	ConfigGeneration.new(@contexts, @config["proxy_timeout"], @config["proxy_send_timeout"]).generate
     end
 
   public
