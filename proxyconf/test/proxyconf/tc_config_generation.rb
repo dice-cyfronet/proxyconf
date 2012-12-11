@@ -44,6 +44,7 @@ module ProxyConf
 	        proxy_send_timeout #{proxy_send_timeout};
 		proxy_pass http:\/\/ctx.#{context}.app.#{app}.service.#{service}\/;
 	        proxy_set_header X-Path-Prefix \"/#{context}/#{app}/#{service}\";
+	        proxy_set_header X-Server-Address http:\/\/$server_addr:$server_port;
 	    }   
 	    ".gsub(/[\s\n]/, ""));
 	    
@@ -53,6 +54,7 @@ module ProxyConf
 	        proxy_send_timeout #{proxy_send_timeout};
 		proxy_pass http:\/\/ctx.#{context}.app.#{app}.service.#{service2}\/;
 	        proxy_set_header X-Path-Prefix \"/#{context}/#{app}/#{service2}\";  
+	        proxy_set_header X-Server-Address http:\/\/$server_addr:$server_port;
 	    }".gsub(/[\s\n]/, "")); 
 	end
 	
