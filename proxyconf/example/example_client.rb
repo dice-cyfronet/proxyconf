@@ -12,7 +12,7 @@ puts "Display client hierarchy..."
 puts proxyconf["workers"].get
 
 puts "Dump current state to file..."
-puts proxyconf["restore"].post nil
+puts proxyconf["dump"].post nil
 
 puts "Display client list..."
 puts proxyconf["worker_list"].get
