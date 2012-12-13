@@ -173,6 +173,16 @@ module ProxyConf
 	    assert(ret1.include?(@@address))
 	    assert(ret1.include?(@@address2))
 	end
+	
+	def test_get_set_state
+	    #given
+	    conf = NginxConfiguration.new(nil)
+	    conf.register(@@context, @@app, @@service, "http://#{@@address}:8080")
+	    conf.register(@@context, @@app, @@service2, @@address)
+	    conf.register(@@context, @@app, @@service, "http://#{@@address2}:4000")
+	    conf2 = NginxConfiguration.new(nil, conf.get_state)
+	    assert_equal(conf.get_state, conf2.get_state)
+	end 
 
     end
 end 

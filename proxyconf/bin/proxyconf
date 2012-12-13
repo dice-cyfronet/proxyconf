@@ -26,15 +26,32 @@ OptionParser.new do |opts|
   opts.on("-c FILE", "--config FILE", "YAML-based configuration file") do |path|  
     options.config = path
   end
+  
+  opts.on("-r", "--restore", "Restore saved proxyconf state on startup") do |v|
+    options.restore = v
+  end
+  
 end.parse!
 
 begin                                
   configuration = YAML::load_file options.config
-  proxyconf = NginxConfiguration.new(configuration)
 rescue Exception => e
   $stderr << "Couldn't load configuration: #{e}\n"
   exit
 end                                    
+
+begin                                
+  if options.restore then 
+    saved_state = YAML::load_file configuration["dump_file"]
+    proxyconf = NginxConfiguration.new(configuration, saved_state)
+    puts "Poxyconf state restored from file '#{configuration["dump_file"]}'"
+  else 
+    proxyconf = NginxConfiguration.new(configuration)
+  end
+rescue Exception => e
+  $stderr << "Couldn't restore saved proxyconf state: #{e}\n"
+  exit
+end  
 
 begin
   proxyconf.configure # starting - clean configs file

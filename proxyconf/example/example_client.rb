@@ -11,6 +11,9 @@ proxyconf["workers/add/context_name/app_name/service_name"].post workers: %w{10.
 puts "Display client hierarchy..."
 puts proxyconf["workers"].get
 
+puts "Dump current state to file..."
+puts proxyconf["restore"].post nil
+
 puts "Display client list..."
 puts proxyconf["worker_list"].get
 
@@ -30,5 +33,11 @@ puts "Unregister ips from all services..."
 proxyconf["workers/delete_all"].post ips: %w{10.0.0.7}
 
 puts "Display client hierarchy again..."
+puts proxyconf["workers"].get       
+
+puts "Restore saved state..."
+puts proxyconf["restore"].post nil
+
+puts "Display client hierarchy once again..."
 puts proxyconf["workers"].get       
 

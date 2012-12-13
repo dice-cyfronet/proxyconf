@@ -1,6 +1,7 @@
 require "sinatra/base" 
 require "sinatra/sugar"               
 require 'json'    
+require 'yaml'    
 module ProxyConf     
   class RESTInterface < Sinatra::Base      
     
@@ -25,7 +26,7 @@ module ProxyConf
       content_type :json
       settings.proxyconf.list_ips.to_json
     end
-    
+   
     # Registers given workers
     post '/workers/add/:context_id/:application_id/:service_name' do      
       params[:workers].each do |worker|
@@ -76,5 +77,23 @@ module ProxyConf
       end
       ret.to_json
     end
+    
+    # Dumps current state to file 
+    post '/dump' do      
+      File.open(settings.proxyconf.config["dump_file"], "w"){|f| YAML.dump(settings.proxyconf.get_state, f)}
+      "OK"
+    end
+    
+    # Restores saved state from file
+    post '/restore' do      
+      begin      
+        saved_state = YAML::load_file settings.proxyconf.config["dump_file"]
+        settings.proxyconf.set_state(saved_state)
+        "OK"
+      rescue Exception => e
+        "ERROR: #{e}" 
+      end  
+    end
+    
   end
 end
