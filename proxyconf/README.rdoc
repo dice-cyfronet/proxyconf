@@ -49,6 +49,7 @@ Unregisters workers and reloads nginx config. Workers list to be unregistered sh
       -c, --config FILE                YAML-based configuration file example
       -v, --[no-]verbose               Verbose logging (for debugging)
       -d, --[no-]dev                   Development environment
+      -r, --restore                    Restore saved proxyconf state on startup
 
 == Security
 All rest services are sucured by basic HTTP authentication. Username and password can be set in configuration file.
@@ -65,6 +66,7 @@ Example configuration (see <tt>example/example_config.yaml</tt>.):
   upstream_config:    /etc/nginx/proxyconf_upstream.conf   # included in http config section
   proxy_config:       /etc/nginx/proxyconf_proxy.conf      # included in server config section  
   pid_file:           /var/run/nginx.pid                   # nginx pidfile
+  dump_file:          /home/nginx/proxyconf_dump.yaml      # file used for restoration of the proxyconf state
   access_log:         /var/log/nginx/proxyconf.log         # access log used in stats generator
   access_log_buffer:  1200                                 # how old entries are kept in memory for statistics (in seconds)
   proxy_timeout:      600                                  # proxy timeout in seconds (probably should be higher than 600 seconds)
@@ -95,6 +97,7 @@ It should look like this:
                     
 == Example client   
 See <tt>example/example_client.rb</tt>.
+
     #!/usr/bin/env ruby
     require 'rest-client'
     require 'json'
@@ -107,6 +110,9 @@ See <tt>example/example_client.rb</tt>.
 
     puts "Display client hierarchy..."
     puts proxyconf["workers"].get
+
+    puts "Dump current state to file..."
+    puts proxyconf["dump"].post nil
 
     puts "Display client list..."
     puts proxyconf["worker_list"].get
@@ -128,3 +134,10 @@ See <tt>example/example_client.rb</tt>.
 
     puts "Display client hierarchy again..."
     puts proxyconf["workers"].get       
+
+    puts "Restore saved state..."
+    puts proxyconf["restore"].post nil
+
+    puts "Display client hierarchy once again..."
+    puts proxyconf["workers"].get       
+
