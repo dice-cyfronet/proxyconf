@@ -36,7 +36,8 @@ module ProxyConf
 	    proxy_read_timeout #{@proxy_timeout};
 	    proxy_send_timeout #{@proxy_send_timeout};
 	    proxy_pass http://#{application_service_name}/;
-	    proxy_set_header X-Path-Prefix \"/#{application}/#{service}\";
+	    proxy_set_header X-Path-Prefix \"/#{context}/#{application}/#{service}\";
+      proxy_set_header X-Server-Address http://$server_addr:$server_port;
 	}   
 	CONFIG
 	  end
