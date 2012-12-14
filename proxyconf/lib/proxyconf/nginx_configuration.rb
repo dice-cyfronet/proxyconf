@@ -9,18 +9,32 @@ module ProxyConf
     
   @@address_regex = /(.*:\/\/)?([^:\/]*)([:\/].*)?/
       
-  attr_reader :dns_map
+  attr_reader :dns_map, :config
   
   public  
     # Constructor
     # @param [Hash] config Data from configuration file
-    def initialize(config)
+    def initialize(config, state = nil )
       @config = config
-      @contexts = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = [] } } }
-      @dns_map = {}
+      if state then	
+	@contexts = state['contexts']
+	@dns_map = state['dns_map'] 
+      else 
+	@contexts = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = [] } } }
+	@dns_map = {}
+      end
       @dns_map.extend(MonitorMixin)
     end
-
+         
+    def get_state()
+	return { 'contexts' => @contexts, 'dns_map' => @dns_map}
+    end
+    
+    def set_state(state)
+	@contexts = state['contexts']
+	@dns_map = state['dns_map'] 
+    end
+	
     def is_registered(context_id, application_id, service_name, addr)      
       @contexts[context_id][application_id][service_name].include? addr
     end    
