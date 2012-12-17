@@ -49,7 +49,7 @@ module ProxyConf
     
     def register(context_id, application_id, service_name, addr)      
       unless @contexts[context_id][application_id][service_name].include? addr
-        unless addr =~ /^\d+\.\d+\.\d+\d+(:\d+)?$/
+        unless addr =~ /^\d+\.\d+\.\d+\.\d+(:\d+)?$/
           addr_parts = /^([^:]*)(:\d+)?/.match addr
           port = if addr_parts[2] then addr_parts[2] else ":80" end
           Net::DNS::Resolver.start(addr_parts[1], Net::DNS::A).each_address do |ip| 
