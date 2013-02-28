@@ -6,39 +6,43 @@ require 'net/dns/resolver'
 
 module ProxyConf
   class NginxConfiguration
-    
+
   @@address_regex = /(.*:\/\/)?([^:\/]*)([:\/].*)?/
-      
+
   attr_reader :dns_map, :config
-  
-  public  
+
+  public
     # Constructor
     # @param [Hash] config Data from configuration file
     def initialize(config, state = nil )
       @config = config
-      if state then	
-	@contexts = state['contexts']
-	@dns_map = state['dns_map'] 
-      else 
-	@contexts = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = [] } } }
-	@dns_map = {}
+      set_state(state)
+    end
+
+    def get_state()
+      { 'contexts' => @contexts, 'dns_map' => @dns_map}
+    end
+
+    def set_state(state = nil)
+      @contexts = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = [] } } }
+      @dns_map = {}
+      if state then
+        state['contexts'].each{ |context, v1|
+          v1.each {|application, v2|
+            v2.each{|service, workers|
+              @contexts[context][application][service] = workers
+            }
+          }
+        }
+        @dns_map = state['dns_map']
       end
       @dns_map.extend(MonitorMixin)
     end
-         
-    def get_state()
-	return { 'contexts' => @contexts, 'dns_map' => @dns_map}
-    end
-    
-    def set_state(state)
-	@contexts = state['contexts']
-	@dns_map = state['dns_map'] 
-    end
-	
-    def is_registered(context_id, application_id, service_name, addr)      
+
+    def is_registered(context_id, application_id, service_name, addr)
       @contexts[context_id][application_id][service_name].include? addr
-    end    
-    
+    end
+
     # Registers worker
     #
     # If DNS name is given, all IP addresses are registered. If worker is already registered does nothing.
@@ -46,19 +50,20 @@ module ProxyConf
     # @param [String] application_id Application id
     # @param [String] service_name Service name
     # @param [String] addr Service address
-    
-    def register(context_id, application_id, service_name, addr)      
+
+    def register(context_id, application_id, service_name, addr)
+      p "checking #{context_id} #{application_id} #{service_name}"
       unless @contexts[context_id][application_id][service_name].include? addr
         unless addr =~ /^\d+\.\d+\.\d+\.\d+(:\d+)?$/
           addr_parts = /^([^:]*)(:\d+)?/.match addr
           port = if addr_parts[2] then addr_parts[2] else ":80" end
-          Net::DNS::Resolver.start(addr_parts[1], Net::DNS::A).each_address do |ip| 
-            @dns_map.synchronize do 
+          Net::DNS::Resolver.start(addr_parts[1], Net::DNS::A).each_address do |ip|
+            @dns_map.synchronize do
               @dns_map[ip.to_s+port] = addr
             end
           end
         end
-        @contexts[context_id][application_id][service_name] << addr 
+        @contexts[context_id][application_id][service_name] << addr
 
       end
     end
@@ -70,12 +75,12 @@ module ProxyConf
     # @param [String] application_id Application id
     # @param [String] service_name Service name
     # @param [String] addr Service address
-    def unregister(context_id, application_id, service_name, addr)           
+    def unregister(context_id, application_id, service_name, addr)
       if @contexts.has_key? context_id and @contexts[context_id].has_key? application_id and @contexts[context_id][application_id].has_key? service_name then
-        ret = @contexts[context_id][application_id][service_name].delete addr 
-        @dns_map.synchronize do 
+        ret = @contexts[context_id][application_id][service_name].delete addr
+        @dns_map.synchronize do
            @dns_map.delete_if { |k,v| v == addr }
-        end                                           
+        end
         # data structures cleanup
 	@contexts[context_id][application_id].delete service_name if @contexts[context_id][application_id][service_name].size == 0
         @contexts[context_id].delete application_id if @contexts[context_id][application_id].size == 0
@@ -83,7 +88,7 @@ module ProxyConf
       end
       ret
     end
-  
+
     # Unregisters address from all services
     #
     # @param [String] addr Service address
@@ -92,8 +97,8 @@ module ProxyConf
 	ret = false
 	@contexts.each_pair do |context_id, applications|
 	    applications.each_pair do |application_id, services|
-		services.each_pair do |service_id, addresses| 
-		    if addresses.include?(addr) && !matches[context_id][application_id].include?(service_id) then 
+		services.each_pair do |service_id, addresses|
+		    if addresses.include?(addr) && !matches[context_id][application_id].include?(service_id) then
 			matches[context_id][application_id].add(service_id)
 		    end
 		end
@@ -101,14 +106,14 @@ module ProxyConf
 	end
 	matches.each_pair do |context_id, applications|
 	    applications.each_pair do |application_id, services|
-		services.each do |service_id| 
+		services.each do |service_id|
 		   ret |= unregister(context_id, application_id, service_id, addr)
 		end
 	    end
 	end
 	ret
     end
-    
+
     # Unregisters ip from all services
     #
     # @param [String] addr Service address
@@ -117,12 +122,12 @@ module ProxyConf
 	ret = false
 	@contexts.each_pair do |context_id, applications|
 	    applications.each_pair do |application_id, services|
-		services.each_pair do |service_id, addresses| 
+		services.each_pair do |service_id, addresses|
 		    addresses.each do |address|
-			if @@address_regex.match(address).captures[1] == ip 
+			if @@address_regex.match(address).captures[1] == ip
 			    matches << [context_id, application_id, service_id, address]
-			end 
-		    end 
+			end
+		    end
 		end
 	    end
 	end
@@ -144,7 +149,7 @@ module ProxyConf
        set = Set.new
        @contexts.each_pair do |context_id, applications|
 	    applications.each_pair do |application_id, services|
-		services.each_pair do |service_id, addresses| 
+		services.each_pair do |service_id, addresses|
 		    addresses.each do |address|
 			set << @@address_regex.match(address).captures[1]
 		    end
@@ -153,14 +158,14 @@ module ProxyConf
 	end
 	set.to_a()
     end
-    
+
     # Returns a set of all registered workers
     # @return [Set]
     def list_workers
        set = Set.new
        @contexts.each_pair do |context_id, applications|
 	    applications.each_pair do |application_id, services|
-		services.each_pair do |service_id, addresses| 
+		services.each_pair do |service_id, addresses|
 		    addresses.each do |address|
 			set << address
 		    end
@@ -169,7 +174,7 @@ module ProxyConf
 	end
 	set.to_a()
     end
-    
+
   private
 
     # Generate nginx proxy config
@@ -182,20 +187,20 @@ module ProxyConf
     # Save nginx proxy config to disk and reload server configuration
     def configure
       upstream_config, proxy_config = configuration
-      begin 
+      begin
         File.open(@config["upstream_config"],"w") { |file| file.write upstream_config }
         File.open(@config["proxy_config"],"w") { |file| file.write proxy_config }
 
         File.open(@config["pid_file"]) do |file|
          pid = file.read.to_i
          Process.kill :SIGHUP, pid
-        end 
+        end
       rescue Errno::EACCES
         $stderr << "Error: Cannot write to config files\n"
         raise
       rescue Errno::ESRCH
         $stderr << "Warning: Nginx is dead - continuing\n"
-      end      
+      end
     end
   end
 end
