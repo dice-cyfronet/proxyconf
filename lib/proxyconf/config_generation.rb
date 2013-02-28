@@ -1,4 +1,5 @@
 require "stringio"
+require "open-uri"
 
 module ProxyConf
   class ConfigGeneration
@@ -23,20 +24,20 @@ module ProxyConf
       @contexts.each do |context, applications|
       applications.each do |application, services|
         services.each do |service, workers|
-          application_service_name = "ctx.#{context}.app.#{application}.service.#{service}"
+          application_service_name = "ctx.#{URI::encode(context)}.app.#{URI::encode(application)}.service.#{URI::encode(service)}"
 
           # TODO sanitize vm.name
           # TODO Ticket #10
           upstream << "upstream #{application_service_name} { \n"
-          upstream << workers.map { |worker| "\tserver #{worker};"}.join("\n")
+          upstream << workers.map { |worker| "\tserver #{URI::encode(worker)};"}.join("\n")
           upstream << "\n}\n"
 
           proxy    << <<-CONFIG
-  location /#{context}/#{application}/#{service}/ {
+  location /#{URI::encode(context)}/#{URI::encode(application)}/#{URI::encode(service)}/ {
       proxy_read_timeout #{@proxy_timeout};
       proxy_send_timeout #{@proxy_send_timeout};
       proxy_pass http://#{application_service_name}/;
-      proxy_set_header X-Path-Prefix \"/#{context}/#{application}/#{service}\";
+      proxy_set_header X-Path-Prefix \"/#{URI::encode(context)}/#{URI::encode(application)}/#{URI::encode(service)}\";
       proxy_set_header X-Server-Address http://$server_addr:$server_port;
   }
   CONFIG

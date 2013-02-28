@@ -1,1 +1,5 @@
 *~
+.idea
+proxyconf/bin/mojrun.sh
+proxyconf/test/proxyconf/.directory
+
