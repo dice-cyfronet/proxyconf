@@ -33,7 +33,7 @@ module ProxyConf
           upstream << "\n}\n"
 
           proxy    << <<-CONFIG
-  location /#{URI::encode(context)}/#{URI::encode(application)}/#{URI::encode(service)}/ {
+  location "/#{URI::encode(context)}/#{URI::encode(application)}/#{URI::encode(service)}/" {
       proxy_read_timeout #{@proxy_timeout};
       proxy_send_timeout #{@proxy_send_timeout};
       proxy_pass http://#{application_service_name}/;
